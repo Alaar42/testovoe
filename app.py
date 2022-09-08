@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request
+from sqlalchemy import insert
 from sqlalchemy.orm import sessionmaker
 from db import engine, user, token
 import random
@@ -67,6 +68,20 @@ def json_example():
                 print(row)
                 if login == row.login and password == row.password:
                     tkn = random.randint(0, 9999)
+
+                    with engine.connect() as conn:
+                        add_token = conn.execute(
+                            insert(token),
+                            [
+                                {"token": tkn, "login": login},
+
+                            ]
+                        )
+                   # print(insert_stmt)
+                    #session.commit()
+
+
+
 
                     #tkn = row.token
 
