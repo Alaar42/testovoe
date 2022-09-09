@@ -1,11 +1,12 @@
 from flask import Flask, render_template, request
 from sqlalchemy import insert
 from sqlalchemy.orm import sessionmaker
-from db import engine, user, token
+from db import engine, user, token, messages
 import random
 import jwt
 
 import string
+
 app = Flask(__name__)
 
 
@@ -46,13 +47,54 @@ def form_example():
            </form>'''
 
 
+@app.route('/json-message', methods=['GET', 'POST'])
+def message_accept():
+    if request.method == 'POST':
+        try:
+            data = request.get_json()
+            user_msg = data['message']
+
+            headers = request.headers
+
+            b = str(headers['token'][7:])
+            Session = sessionmaker(bind=engine)
+            session = Session()
+            # result1 = session.query.order_by(session.id.desc()).first()
+
+            result1 = session.query(token).filter_by(token=b)
+
+            last_row = result1[-1]
+            user_login = last_row['login']
+            print(last_row)
+            a = str(last_row['token'])
+
+
+            if a == b:
+                print('ОН СРАВНИЛ')
+                with engine.connect() as conn:
+                    add_msg = conn.execute(
+                        insert(messages),
+                        [
+                            {"login": user_login, "message": user_msg},
+
+                        ]
+                    )
+
+
+
+            json_response = {"auth": 'success',
+                             "msg": "сообщение записанно"}
+            return json_response
+        except:
+            print("m?")
+
 
 @app.route('/json-example', methods=['GET', 'POST'])
 def json_example():
     print("Получен запрос")
     if request.method == 'POST':
         try:
-            #print(request.get_json())
+            # print(request.get_json())
             data = request.get_json()
 
             login = data['login']
@@ -87,8 +129,9 @@ def token_generation(login):
     print(login)
     key = 'secret'
     tkn = jwt.encode({"name": login}, key, algorithm="HS256")
-    print(tkn)
+    # print(tkn)
     return tkn
+
 
 if __name__ == '__main__':
     app.run(debug=True)
