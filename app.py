@@ -95,6 +95,8 @@ def json_example():
     if request.method == 'POST':
         try:
             # print(request.get_json())
+            error_msg = ''
+            tkn = ''
             data = request.get_json()
 
             login = data['login']
@@ -104,10 +106,11 @@ def json_example():
             session = Session()
             result = session.query(user).all()
 
-            print(result)
+            login_in_table = False
             for row in result:
-                print(row)
+                #print(row)
                 if login == row.login and password == row.password:
+                    login_in_table = True
                     tkn = token_generation(login)
                     print(tkn)
                     with engine.connect() as conn:
@@ -118,11 +121,23 @@ def json_example():
 
                             ]
                         )
+                elif login == row.login and password != row.password:
+                    login_in_table = True
+                    error_msg = 'wrong password'
+            print(error_msg)
+            if login_in_table == False:
+                error_msg = 'No such user'
 
-            json_response = {"token": str(tkn)}
+
+
+
+            json_response = {
+                "error": error_msg,
+                "token": str(tkn)}
+            print(json_response)
             return json_response
         except:
-            print('error')
+            print('Неизвестная ошибка')
 
 
 def token_generation(login):
