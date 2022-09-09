@@ -56,18 +56,18 @@ def message_accept():
 
             headers = request.headers
 
+            #print(headers)
             b = str(headers['token'][7:])
+            #print(b)
             Session = sessionmaker(bind=engine)
             session = Session()
-            # result1 = session.query.order_by(session.id.desc()).first()
 
             result1 = session.query(token).filter_by(token=b)
-
+            print(result1)
             last_row = result1[-1]
             user_login = last_row['login']
             print(last_row)
             a = str(last_row['token'])
-
 
             if a == b:
                 print('ОН СРАВНИЛ')
@@ -80,13 +80,15 @@ def message_accept():
                         ]
                     )
 
-
-
             json_response = {"auth": 'success',
-                             "msg": "сообщение записанно"}
+                             "msg": "сообщение записанно",
+                             'error': ''
+                             }
             return json_response
         except:
-            print("m?")
+
+            json_response = {'error': 'wrong token'}
+            return json_response
 
 
 @app.route('/json-example', methods=['GET', 'POST'])
@@ -108,7 +110,7 @@ def json_example():
 
             login_in_table = False
             for row in result:
-                #print(row)
+                # print(row)
                 if login == row.login and password == row.password:
                     login_in_table = True
                     tkn = token_generation(login)
@@ -127,9 +129,6 @@ def json_example():
             print(error_msg)
             if login_in_table == False:
                 error_msg = 'No such user'
-
-
-
 
             json_response = {
                 "error": error_msg,
