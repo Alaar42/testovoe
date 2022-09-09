@@ -3,8 +3,9 @@ from sqlalchemy import insert
 from sqlalchemy.orm import sessionmaker
 from db import engine, user, token
 import random
+import jwt
+
 import string
-hello_world = "Nadyshka-Perdusha-Krasatushka"
 app = Flask(__name__)
 
 
@@ -56,19 +57,17 @@ def json_example():
 
             login = data['login']
             password = data['pass']
-
             print("Connecting to DB")
             Session = sessionmaker(bind=engine)
             session = Session()
-            #result = session.query(user, token).all()
             result = session.query(user).all()
 
             print(result)
             for row in result:
                 print(row)
                 if login == row.login and password == row.password:
-                    tkn = random.randint(0, 9999)
-
+                    tkn = token_generation(login)
+                    print(tkn)
                     with engine.connect() as conn:
                         add_token = conn.execute(
                             insert(token),
@@ -77,23 +76,19 @@ def json_example():
 
                             ]
                         )
-                   # print(insert_stmt)
-                    #session.commit()
 
-
-
-
-                    #tkn = row.token
-
-            #print(tkn)
             json_response = {"token": str(tkn)}
-            #print(login)
             return json_response
         except:
             print('error')
 
 
-
+def token_generation(login):
+    print(login)
+    key = 'secret'
+    tkn = jwt.encode({"name": login}, key, algorithm="HS256")
+    print(tkn)
+    return tkn
 
 if __name__ == '__main__':
     app.run(debug=True)

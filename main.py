@@ -11,6 +11,6 @@ data = {"login": "user123",
 # payload = {'json_payload': data_json}
 # print(payload)
 r = requests.post(url, json=data)
-#datanew = r.json()
-print(r)
+datanew = r.json()
+print(datanew)
 
