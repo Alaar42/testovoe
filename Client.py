@@ -2,6 +2,17 @@ import requests
 import json
 
 
+
+# CREDS FOR TESTING : (put them in data row(19))
+# data = {"login": "Bob",
+#         "pass": "coolPass42"}
+# data = {"login": "Wrong_logind",
+#         "pass": "nvm"}
+# data = {"login": "user123",
+#         "pass": "wrong_pass"}
+
+
+
 # Функция получения токена
 def get_token():
     url = 'http://127.0.0.1:5000/json-example'
