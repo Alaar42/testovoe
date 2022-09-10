@@ -1,3 +1,5 @@
+import json
+from flask_sqlalchemy import SQLAlchemy
 from flask import Flask, render_template, request
 from sqlalchemy import insert
 from sqlalchemy.orm import sessionmaker
@@ -69,8 +71,29 @@ def message_accept():
             print(last_row)
             a = str(last_row['token'])
 
+            # проверка токена из запроса и базы
             if a == b:
-                print('ОН СРАВНИЛ')
+                print(user_msg)
+                if user_msg == 'history 10':
+                    data_msg_return = {'msg':{'user': 'text'},
+                                       'error':''}
+                    new_list = []
+                    Session = sessionmaker(bind=engine)
+                    session = Session()
+                    result2 = session.query(messages).all()
+                    for row in result2[-11:-1]:
+
+                        data_msg_return['msg']['user']=row["login"]
+                        data_msg_return['msg']['text']=row["message"]
+
+                        new_list.append(str(data_msg_return))
+
+                    new_list = json.dumps(new_list)
+                    return new_list
+
+
+
+                # запись сообщения в бд
                 with engine.connect() as conn:
                     add_msg = conn.execute(
                         insert(messages),
@@ -79,12 +102,18 @@ def message_accept():
 
                         ]
                     )
-
+            #ответ клиенту
             json_response = {"auth": 'success',
                              "msg": "сообщение записанно",
                              'error': ''
                              }
             return json_response
+
+
+
+
+
+
         except:
 
             json_response = {'error': 'wrong token'}

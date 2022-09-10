@@ -30,16 +30,8 @@ def post_msg(datanew):
     r = requests.post(url_message_post, json=data, headers=datanew)
     response = r.json()
     print(response)
-    if response['error'] == '':
+    print('poka poka')
 
-
-        answer = input('хотите ещё? y/n')
-        answer.lower()
-        if answer == "y" or answer == 'да':
-            post_msg(datanew)
-        else:
-            print('poka poka')
-    else:print(response)
 
 
 datanew = get_token()
