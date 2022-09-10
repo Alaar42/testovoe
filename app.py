@@ -1,13 +1,9 @@
 import json
-from flask_sqlalchemy import SQLAlchemy
 from flask import Flask, render_template, request
 from sqlalchemy import insert
 from sqlalchemy.orm import sessionmaker
 from db import engine, user, token, messages
-import random
 import jwt
-
-import string
 
 app = Flask(__name__)
 
@@ -18,37 +14,7 @@ def index():
     return render_template('index.html')
 
 
-@app.route("/about")
-def about():
-    return render_template("about.html")
-
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'GET':
-        login = str(request.form['login'])
-        print(login)
-
-
-@app.route('/form-example', methods=['GET', 'POST'])
-def form_example():
-    # handle the POST request
-    if request.method == 'POST':
-        user = request.form.get('login')
-        framework = request.form.get('framework')
-        return '''
-                  <h1>The language value is: {}</h1>
-                  <h1>The framework value is: {}</h1>'''.format(user, framework)
-
-    # otherwise handle the GET request
-    return '''
-           <form method="POST">
-               <div><label>Language: <input type="text" name="language"></label></div>
-               <div><label>Framework: <input type="text" name="framework"></label></div>
-               <input type="submit" value="Submit">
-           </form>'''
-
-
+# приём сообщения с проверкой токена
 @app.route('/json-message', methods=['GET', 'POST'])
 def message_accept():
     if request.method == 'POST':
@@ -58,9 +24,9 @@ def message_accept():
 
             headers = request.headers
 
-            #print(headers)
-            b = str(headers['token'][7:])
-            #print(b)
+            # print(headers)
+            b = str(headers['token'][7:]) #Можно сделать разделене по "_"
+            # print(b)
             Session = sessionmaker(bind=engine)
             session = Session()
 
@@ -75,25 +41,33 @@ def message_accept():
             if a == b:
                 print(user_msg)
                 if user_msg == 'history 10':
-                    data_msg_return = {'msg':{'user': 'text'},
-                                       'error':''}
+                    data_msg_return = {'msg': {'user': 'text'},
+                                       'error': ''}
                     new_list = []
                     Session = sessionmaker(bind=engine)
                     session = Session()
                     result2 = session.query(messages).all()
                     for row in result2[-11:-1]:
-
-                        data_msg_return['msg']['user']=row["login"]
-                        data_msg_return['msg']['text']=row["message"]
+                        data_msg_return['msg']['user'] = row["login"]
+                        data_msg_return['msg']['text'] = row["message"]
 
                         new_list.append(str(data_msg_return))
 
                     new_list = json.dumps(new_list)
+
+                    # delete last token
+                    with engine.connect() as conn:
+                        last_token_del = conn.execute(
+                            insert(token),
+                            [
+                                {"login": user_login, "token": 'expired_token'},
+
+                            ]
+                        )
                     return new_list
 
-
-
                 # запись сообщения в бд
+                # и запись об истечении токена
                 with engine.connect() as conn:
                     add_msg = conn.execute(
                         insert(messages),
@@ -102,48 +76,48 @@ def message_accept():
 
                         ]
                     )
-            #ответ клиенту
+                    last_token_del = conn.execute(
+                        insert(token),
+                        [
+                            {"login": user_login, "token": 'expired_token'},
+
+                        ]
+                    )
+            # ответ клиенту
             json_response = {"auth": 'success',
                              "msg": "сообщение записанно",
                              'error': ''
                              }
             return json_response
-
-
-
-
-
-
         except:
 
             json_response = {'error': 'wrong token'}
             return json_response
 
 
+# Функция проверки кредов и выдача токена
 @app.route('/json-example', methods=['GET', 'POST'])
 def json_example():
     print("Получен запрос")
     if request.method == 'POST':
         try:
-            # print(request.get_json())
             error_msg = ''
             tkn = ''
             data = request.get_json()
-
             login = data['login']
             password = data['pass']
             print("Connecting to DB")
             Session = sessionmaker(bind=engine)
             session = Session()
             result = session.query(user).all()
-
             login_in_table = False
+            # Проверка логина и пароля
             for row in result:
-                # print(row)
                 if login == row.login and password == row.password:
                     login_in_table = True
                     tkn = token_generation(login)
-                    print(tkn)
+
+                    # Создание токена если креды верны
                     with engine.connect() as conn:
                         add_token = conn.execute(
                             insert(token),
@@ -155,7 +129,7 @@ def json_example():
                 elif login == row.login and password != row.password:
                     login_in_table = True
                     error_msg = 'wrong password'
-            print(error_msg)
+            # print(error_msg)
             if login_in_table == False:
                 error_msg = 'No such user'
 
@@ -168,11 +142,11 @@ def json_example():
             print('Неизвестная ошибка')
 
 
+# Генерация токена
 def token_generation(login):
     print(login)
     key = 'secret'
     tkn = jwt.encode({"name": login}, key, algorithm="HS256")
-    # print(tkn)
     return tkn
 
 

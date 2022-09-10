@@ -1,6 +1,5 @@
-from sqlalchemy import MetaData, Table, String, Integer, Column, Text, DateTime, Boolean, ForeignKey, create_engine
+from sqlalchemy import MetaData, Table, String, Integer, Column, Text, ForeignKey, create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
 from datetime import datetime
 
 # connect with database
@@ -9,7 +8,7 @@ engine = create_engine('sqlite:///test.sqlite', echo=True)
 base = declarative_base()
 
 metadata = MetaData()
-
+#Перечисление таблиц
 user = Table('user', metadata,
              Column('id', Integer(), primary_key=True),
              Column('login', String(200), nullable=False),
@@ -28,12 +27,5 @@ messages = Table('messages', metadata,
                  #   Column('created_on', DateTime(), default=datetime.now),
                  Column('message', Text(), nullable=False)
                  )
+# создание бд
 metadata.create_all(engine)
-
-from sqlalchemy.orm import sessionmaker
-
-Session = sessionmaker(bind=engine)
-session = Session()
-result = session.query(user).all()
-for row in result:
-    print(row.login, row.password)
