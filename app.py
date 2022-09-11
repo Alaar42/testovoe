@@ -1,5 +1,5 @@
 import json
-from flask import Flask, render_template, request
+from flask import Flask, request
 from sqlalchemy import insert
 from sqlalchemy.orm import sessionmaker
 from db import engine, user, token, messages
@@ -8,37 +8,31 @@ import jwt
 app = Flask(__name__)
 
 
-@app.route("/")
-@app.route("/home")
-def index():
-    return render_template('index.html')
-
-
 # приём сообщения с проверкой токена
 @app.route('/json-message', methods=['GET', 'POST'])
 def message_accept():
     if request.method == 'POST':
         try:
             data = request.get_json()
+# Забираем логин и хеддеры
             user_msg = data['message']
-
             headers = request.headers
 
             # print(headers)
-            b = str(headers['token'][7:]) #Можно сделать разделене по "_"
+            token_user = str(headers['token'][7:]) #Можно сделать разделене по "_"
             # print(b)
+            # Подключаемся к бд, чтобы сравнить токен
             Session = sessionmaker(bind=engine)
             session = Session()
-
-            result1 = session.query(token).filter_by(token=b)
-            print(result1)
+            result1 = session.query(token).filter_by(token=token_user)
+            #print(result1)
             last_row = result1[-1]
             user_login = last_row['login']
-            print(last_row)
-            a = str(last_row['token'])
+            #print(last_row)
+            token_bd = str(last_row['token'])
 
             # проверка токена из запроса и базы
-            if a == b:
+            if token_bd == token_user:
                 print(user_msg)
                 if user_msg == 'history 10':
                     data_msg_return = {'msg': {'user': 'text'},
@@ -106,7 +100,7 @@ def json_example():
             data = request.get_json()
             login = data['login']
             password = data['pass']
-            print("Connecting to DB")
+            print("New connection")
             Session = sessionmaker(bind=engine)
             session = Session()
             result = session.query(user).all()
